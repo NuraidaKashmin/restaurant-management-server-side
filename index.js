@@ -6,3 +6,11 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) =>{
+    res.send('restaurant is open now')
+})
+
+
+app.listen(port, () =>{
+    console.log(`Yeeeeeeeeee ${port}`)
+})
