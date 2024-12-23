@@ -45,6 +45,13 @@ async function run() {
         })
 
 
+        app.get('/all-foods/:email', async (req, res)=>{
+            const email = req.params.email
+            const query = 
+            const result = await foodCollection.find().toArray()
+        })
+
+
 
 
         // Connect the client to the server	(optional starting in v4.7)
