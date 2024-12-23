@@ -31,7 +31,7 @@ async function run() {
         const db = client.db('solo-db')
         const foodCollection = db.collection('foods')
 
-        app.post('/add-food', async (req, res)=>{
+        app.post('/add-food', async (req, res) => {
             const foodData = req.body
             const result = await foodCollection.insertOne(foodData)
             console.log(result)
@@ -39,21 +39,21 @@ async function run() {
         })
 
 
-        app.get('/all-foods', async(req, res)=>{
+        app.get('/all-foods', async (req, res) => {
             const result = await foodCollection.find({}).toArray()
             res.send(result)
         })
 
 
-        app.get('/all-foods/:email', async (req, res)=>{
+        app.get('/all-foods/:email', async (req, res) => {
             const email = req.params.email
-            const query = {'addedBy.email': email}
+            const query = { 'addedBy.email': email }
             const result = await foodCollection.find(query).toArray()
             res.send(result)
         })
 
 
-        app.delete('/food/:id', async (req, res)=>{
+        app.delete('/food/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await foodCollection.deleteOne(query)
@@ -61,16 +61,54 @@ async function run() {
         })
 
 
+        app.get('/food/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await foodCollection.findOne(query)
+            res.send(result)
+        })
 
 
-        // Connect the client to the server	(optional starting in v4.7)
+       
+
+app.put('/update-food/:id', async (req, res) => {
+    const { id } = req.params;
+    const updatedFood = req.body;
+
+    if (!id || !updatedFood) {
+        return res.status(400).json({ message: 'Invalid data' });
+    }
+
+    try {
+        
+        delete updatedFood._id;
+
+        const result = await foodCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updatedFood }
+        );
+
+        if (result.modifiedCount > 0) {
+            res.status(200).json({ message: 'Food item updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Food item not found' });
+        }
+    } catch (error) {
+        console.error('Error updating food item:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+
+
+
+        
         await client.connect();
-        // Send a ping to confirm a successful connection
+        
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
+      
     }
 }
 run().catch(console.dir);
