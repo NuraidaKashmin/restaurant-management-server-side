@@ -4,6 +4,9 @@ const app = express();
 require('dotenv').config()
 
 
+const moment = require('moment');
+
+
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -30,13 +33,15 @@ async function run() {
     try {
         const db = client.db('solo-db')
         const foodCollection = db.collection('foods')
+        const ordersCollection = db.collection('orders')
+
+        
 
         app.post('/add-food', async (req, res) => {
-            const foodData = req.body
-            const result = await foodCollection.insertOne(foodData)
-            console.log(result)
-            res.send(result)
-        })
+            const foodData = { ...req.body, purchaseCount: 0 };
+            const result = await foodCollection.insertOne(foodData);
+            res.send(result);
+        });
 
 
         app.get('/all-foods', async (req, res) => {
@@ -98,6 +103,92 @@ app.put('/update-food/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
+
+
+
+
+
+app.post('/food-purchased/:id', async (req, res) => {
+    try {
+        const { quantity, buyerEmail, buyerName  } = req.body;
+        const foodId = req.params.id;
+
+        
+
+        const food = await foodCollection.findOne({ _id: new ObjectId(foodId) });
+
+        if (!food) {
+            return res.status(404).json({ error: "Food item not found" });
+        }
+
+        if (food.quantity < quantity) {
+            return res.status(400).json({ error: "Not enough stock available" });
+        }
+
+        if (food.addedBy?.email === buyerEmail) {
+            return res.status(403).json({ error: "You cannot purchase your own food item." });
+        }
+
+        const updatedQuantity = food.quantity - quantity;
+
+
+   
+
+
+  
+    await foodCollection.updateOne(
+        { _id: new ObjectId(foodId) },
+        {
+            $set: { quantity: updatedQuantity },
+            $inc: { purchaseCount: 1 }
+        }
+    );
+
+    
+    const purchaseData = {
+        foodId: new ObjectId(foodId),
+        foodName: food.name,
+        quantity,
+        buyerName,
+        buyerEmail,
+        price: food.price * quantity,
+        buyingDate: new Date()
+    };
+
+    const orderResult = await ordersCollection.insertOne(purchaseData);
+
+    res.status(200).json({ message: "Purchase successful!", orderResult });
+} catch (err) {
+    console.error("Error processing purchase:", err);
+    res.status(500).json({ error: "Error processing purchase." });
+}
+
+
+
+});
+
+
+
+
+
+app.get('/top-foods', async (req, res) => {
+    try {
+        const topFoods = await foodCollection.find({})
+            .sort({ purchaseCount: -1 })  
+            .limit(6)  
+            .toArray();
+
+        res.json(topFoods);
+    } catch (error) {
+        console.error('Error fetching top foods:', error);
+        res.status(500).json({ error: 'Failed to fetch top foods' });
+    }
+});
+
+
+
+
 
 
 
