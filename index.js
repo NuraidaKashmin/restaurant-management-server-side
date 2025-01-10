@@ -158,6 +158,14 @@ app.post('/food-purchased/:id', async (req, res) => {
 
     const orderResult = await ordersCollection.insertOne(purchaseData);
 
+
+   
+    const insertedOrder = await ordersCollection.findOne({ _id: orderResult.insertedId });
+
+    if (!insertedOrder) {
+        return res.status(500).json({ error: "Failed to retrieve the inserted order." });
+    }
+
     res.status(200).json({ message: "Purchase successful!", orderResult });
 } catch (err) {
     console.error("Error processing purchase:", err);
@@ -167,7 +175,6 @@ app.post('/food-purchased/:id', async (req, res) => {
 
 
 });
-
 
 
 
